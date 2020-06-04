@@ -2,7 +2,7 @@
 
 This is a small Golang program that is intended to be executed by Perforce triggers. When a new changelist is submitted to the path specified in the trigger, changelist details (change #, files changed, the user who submitted the change) are posted to a Discord channel via webhook.
 
-My personal use case was to broadcast new changes made to a Unity project that myself and a friend are working on. 
+My personal use case: a friend and I are working on a hobby Unity game project, and I wanted all new change information to be broadcast to a Discord channel so we were both aware of all changes.
 
 # Requirements
 
