@@ -31,6 +31,8 @@ func loadConfiguration(file string) (config Config, err error) {
 		return
 	}
 
+	defer configFile.Close()
+
 	decoder := json.NewDecoder(configFile)
 	err = decoder.Decode(&config)
 	return
