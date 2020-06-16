@@ -4,6 +4,11 @@ This is a small Golang program that is intended to be executed by Perforce trigg
 
 My personal use case: a friend and I are working on a hobby Unity game project, and I wanted all new change information to be broadcast to a Discord channel so we were both aware of all changes.
 
+Example:
+
+![Example message](/example-message.png?raw=true)
+
+
 # Requirements
 
 * Perforce server that runs on some flavor of Linux. This was tested on CentOS 7. If you need Windows support, it should be trivial. Just note that the default config path is a Linux path so you should only need to change the configuration path and rebuild the binary.
@@ -21,9 +26,3 @@ Open up the p4 trigger configuraiton (run `p4 triggers`) and place the following
  ```
  
 When the trigger is executed, the username of the change submitter as well as the changelist number will be passed into the program.
- 
- # End result
- 
-The result is a Discord [embed](https://discordjs.guide/popular-topics/embeds.html) message that includes information about the new changelist:
- 
-![Example message](/example-message.png?raw=true)
