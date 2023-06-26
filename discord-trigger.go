@@ -136,8 +136,8 @@ func main() {
 
 	changelistDescription, err := getChangelistDescription(*changeNumber)
 	if err != nil {
-		fmt.Printf("Failed to get changed files for change %d\n", *changeNumber)
-		fmt.Println(err.Error())
+		log.Printf("Failed to get changed files for change %d\n", *changeNumber)
+		log.Println(err.Error())
 		return
 	}
 
