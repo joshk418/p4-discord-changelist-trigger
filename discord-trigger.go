@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"log"
 )
 
 type DiscordEmbedBody struct {
@@ -25,17 +26,19 @@ type Config struct {
 	Webhook string `json:"webhook"`
 }
 
-func loadConfiguration(file string) (config Config, err error) {
+func loadConfiguration(file string) (Config, error) {
 	configFile, err := os.Open(file)
 	if err != nil {
-		return
+		return Config{}, nil
 	}
-
 	defer configFile.Close()
 
-	decoder := json.NewDecoder(configFile)
-	err = decoder.Decode(&config)
-	return
+	var cfg Config
+	if err := json.NewDecoder(configFile).Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	
+	return cfg, nil
 }
 
 func sendDiscordWebhook(url string, embed []DiscordEmbedBody) error {
@@ -56,7 +59,6 @@ func sendDiscordWebhook(url string, embed []DiscordEmbedBody) error {
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -65,36 +67,47 @@ func sendDiscordWebhook(url string, embed []DiscordEmbedBody) error {
 	}
 
 	if resp.StatusCode != 204 {
-		fmt.Printf("Non-204 response received: %d\n", resp.StatusCode)
-		fmt.Println(string(body))
+		log.Printf("Non-204 response received: %d\n", resp.StatusCode)
+		log.Println(string(body))
 		return err
 	}
 
 	return nil
 }
 
-func getChangelistFiles(change int) (changedFiles string, err error) {
+func getChangelistFiles(change int) (string, error) {
 	cmd := exec.Command("p4", "-Ztag", "-F", "%depotFile% - %action%", "files", fmt.Sprintf("@=%d", change))
+	
 	cmdOutput, err := cmd.Output()
-
 	if err != nil {
-		return
+		return "", err
 	}
 
-	changedFiles = string(cmdOutput)
-	return
+	return string(cmdOutput), nil
 }
 
-func getChangelistDescription(change int) (changelistDescription string, err error) {
+func getChangelistDescription(change int) (string, error) {
 	cmd := exec.Command("p4", "-Ztag", "-F", "%Description%", "change", "-o", fmt.Sprintf("%d", change))
+	
 	cmdOutput, err := cmd.Output()
-
 	if err != nil {
-		return
+		return "", nil
 	}
 
-	changelistDescription = strings.Trim(string(cmdOutput), "\n")
-	return
+	return strings.Trim(string(cmdOutput), "\n"), nil
+}
+
+func setupLogFile() error {
+	f, err := os.OpenFile("discord-output.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+	log.Println("Initialized log file")
+
+	return nil
 }
 
 func main() {
@@ -103,16 +116,21 @@ func main() {
 	configFileLocation := flag.String("config", "/etc/discord-trigger.conf", "config file location")
 	flag.Parse()
 
+	if err := setupLogFile(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	config, err := loadConfiguration(*configFileLocation)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		return
 	}
 
 	changedFiles, err := getChangelistFiles(*changeNumber)
 	if err != nil {
-		fmt.Printf("Failed to get files for changelist %d\n", *changeNumber)
-		fmt.Println(err.Error())
+		log.Printf("Failed to get files for changelist %d\n", *changeNumber)
+		log.Println(err.Error())
 		return
 	}
 
@@ -128,8 +146,8 @@ func main() {
 
 	err = sendDiscordWebhook(config.Webhook, embedBody)
 	if err != nil {
-		fmt.Println("Failed to POST webhook")
-		fmt.Println(err.Error())
+		log.Println("Failed to POST webhook")
+		log.Println(err.Error())
 		return
 	}
 }
